@@ -13,7 +13,7 @@ using RabbitMQ.Client.Events;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 
-public class RabbitMqService : IRabbitMqService
+public class RabbitMqService : IRabbitMqService, IDisposable
 {
     private readonly IConnection _connection;
     private readonly IModel _channel;
@@ -74,5 +74,32 @@ public class RabbitMqService : IRabbitMqService
             handleMessage(message);
         };
         _channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
+    }
+
+    // Метод для корректной очистки ресурсов
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Освобождаем управляемые ресурсы
+                _channel?.Dispose();
+                _connection?.Dispose();
+            }
+            _disposed = true;
+        }
+    }
+
+    // Реализация IDisposable
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this); // Предотвращаем вызов финализатора
+    }
+
+    ~RabbitMqService()
+    {
+        Dispose(false);
     }
 }
